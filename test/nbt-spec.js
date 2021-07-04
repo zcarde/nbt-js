@@ -75,6 +75,62 @@ describe('nbt.parse', function() {
 	});
 });
 
+describe('nbt.parseSync', function() {
+	function checkBigtest(data) {
+		expect(data.value.stringTest.value).to.equal(
+			'HELLO WORLD THIS IS A TEST STRING ÅÄÖ!');
+		expect(data.value['nested compound test'].value).to.deep.equal({
+			ham: {
+				type: "compound",
+				value: {
+					name: { type: "string", value: "Hampus" },
+					value: { type: "float", value: 0.75 }
+				}
+			},
+			egg: {
+				type: "compound",
+				value: {
+					name: { type: "string", value: 'Eggbert' },
+					value: { type: "float", value: 0.5 }
+				}
+			}
+		});
+	}
+
+	if (typeof zlib !== 'undefined') {
+		it('parses a compressed NBT file', function() {
+			var data = fs.readFileSync('fixtures/bigtest.nbt.gz');
+			checkBigtest(nbt.parsesync(data));
+		});
+	}
+
+	if (typeof zlib !== 'undefined' && typeof Buffer !== 'undefined') {
+		/* Only applicable on Node where fs.readFile returns a Buffer object
+		   which has an ArrayBuffer .buffer attribute. */
+		it('parses a compressed NBT ArrayBuffer', function() {
+			var data = fs.readFileSync('fixtures/bigtest.nbt.gz');
+			var buffer = data.buffer;
+			checkBigtest(nbt.parsesync(buffer));
+		});
+	}
+
+	it('parses an uncompressed NBT file through parse()', function() {
+		var data = fs.readFileSync('fixtures/bigtest.nbt');
+		checkBigtest(nbt.parseSync(data));
+	});
+
+	it('parses an NBT file contining a long array', function() {
+		var data = fs.readFileSync('fixtures/longArrayTest.nbt.gz');
+
+		expect(nbt.parseSync(data).value).to.deep.equal({
+			LongArray: {
+				type: 'longArray',
+				value: [[1, 15], [538976288, 269488144], [84281096, 16909060]] // should be value: [[15, 1], [269488144, 538976288], [16909060, 84281096]]
+			}
+		});
+	});
+});
+
 describe('nbt.write', function() {
 	it('writes an uncompressed NBT file', function() {
 		var nbtData = fs.readFileSync('fixtures/bigtest.nbt');
