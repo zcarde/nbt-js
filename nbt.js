@@ -671,4 +671,31 @@
 			});
 		}
 	};
+	nbt.parseSync = function(data) {
+		if (!data) { throw new Error('Argument "data" is falsy'); }
+
+		var self = this;
+
+		if (!hasGzipHeader(data)) {
+			return this.parseUncompressed(data);
+		} else if (!zlib) {
+			throw new Error('NBT archive is compressed but zlib is not available');
+		} else {
+			/* zlib.gunzip take a Buffer, at least in Node, so try to convert
+			   if possible. */
+			var buffer;
+			if (data.length) {
+				buffer = data;
+			} else if (typeof Buffer !== 'undefined') {
+				buffer = new Buffer(data);
+			} else {
+				/* In the browser? Unknown zlib library. Let's settle for
+				   Uint8Array and see what happens. */
+				buffer = new Uint8Array(data);
+			}
+
+			var uncompressed = zlib.gunzipSync(buffer);
+			return self.parseUncompressed(uncompressed);
+		}
+	};
 }).apply(typeof exports !== 'undefined' ? exports : (window.nbt = {}));
